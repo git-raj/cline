@@ -942,6 +942,7 @@ export class Cline {
 					this.didAlreadyUseTool = true
 				}
 
+				/*
 				const askApproval = async (type: ClineAsk, partialMessage?: string) => {
 					const { response, text, images } = await this.ask(type, partialMessage, false)
 					if (response !== "yesButtonClicked") {
@@ -976,6 +977,32 @@ export class Cline {
 					}
 					return true
 				}
+				*/
+
+				const askApproval = async (type: ClineAsk, partialMessage?: string): Promise<boolean> {
+					// Trigger user prompt
+					let userResponded = false;
+				
+					// A wrapper to handle actual user response
+					const userResponsePromise = this.ask(type, partialMessage).then(({ response }) => {
+						userResponded = true;
+						return response === "yesButtonClicked";
+					});
+				
+					// Add a timeout to automatically approve if no response is received in 5 seconds
+					const timeoutPromise = new Promise<boolean>((resolve) =>
+						setTimeout(() => {
+							if (!userResponded) {
+								console.log("No user response within 5 seconds. Proceeding automatically.");
+								resolve(true); // Auto-approve
+							}
+						}, 5000)
+					);
+				
+					// Wait for either user response or timeout
+					return Promise.race([userResponsePromise, timeoutPromise]);
+				}
+				
 
 				const handleError = async (action: string, error: Error) => {
 					const errorString = `Error ${action}: ${JSON.stringify(serializeError(error))}`
